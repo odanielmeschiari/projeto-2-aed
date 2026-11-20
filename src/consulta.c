@@ -1,9 +1,9 @@
-#include "consulta_generalizada.h"
+#include "consulta.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-struct consulta_generalizada {
+struct consulta {
 	char *campo;
 	char *valor;
 	size_t indice;
@@ -17,7 +17,7 @@ static char *duplicar(const char *texto, size_t tamanho){
 	return copia;
 }
 
-CONSULTA_GENERALIZADA *consulta_generalizada_criar(const char *linha, const char *cabecalho){
+CONSULTA *consulta_criar(const char *linha, const char *cabecalho){
 	if (linha == NULL || cabecalho == NULL) return NULL;
 
 	size_t tamanho = strcspn(linha, "\r\n");
@@ -57,19 +57,19 @@ CONSULTA_GENERALIZADA *consulta_generalizada_criar(const char *linha, const char
 	free(cabecalho_copia);
 	if (indice == quantidade) return NULL;
 
-	CONSULTA_GENERALIZADA *consulta = (CONSULTA_GENERALIZADA *)malloc(sizeof(CONSULTA_GENERALIZADA));
+	CONSULTA *consulta = (CONSULTA *)malloc(sizeof(CONSULTA));
 	if (consulta == NULL) return NULL;
 	consulta->campo = duplicar(campo, tamanho_campo);
 	consulta->valor = duplicar(valor, tamanho_valor);
 	consulta->indice = indice;
 	if (consulta->campo == NULL || consulta->valor == NULL){
-		consulta_generalizada_apagar(&consulta);
+		consulta_apagar(&consulta);
 		return NULL;
 	}
 	return consulta;
 }
 
-void consulta_generalizada_apagar(CONSULTA_GENERALIZADA **consulta){
+void consulta_apagar(CONSULTA **consulta){
 	if (consulta == NULL || *consulta == NULL) return;
 	free((*consulta)->campo);
 	free((*consulta)->valor);
@@ -77,17 +77,17 @@ void consulta_generalizada_apagar(CONSULTA_GENERALIZADA **consulta){
 	*consulta = NULL;
 }
 
-const char *consulta_generalizada_get_campo(const CONSULTA_GENERALIZADA *consulta){
+const char *consulta_get_campo(const CONSULTA *consulta){
 	if (consulta == NULL) return NULL;
 	return consulta->campo;
 }
 
-const char *consulta_generalizada_get_valor(const CONSULTA_GENERALIZADA *consulta){
+const char *consulta_get_valor(const CONSULTA *consulta){
 	if (consulta == NULL) return NULL;
 	return consulta->valor;
 }
 
-size_t consulta_generalizada_get_indice(const CONSULTA_GENERALIZADA *consulta){
+size_t consulta_get_indice(const CONSULTA *consulta){
 	if (consulta == NULL) return (size_t)-1;
 	return consulta->indice;
 }
