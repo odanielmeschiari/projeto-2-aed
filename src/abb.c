@@ -103,6 +103,52 @@ static int num_nodes(NODE *x) {
 	return 1 + num_nodes(x->esq) + num_nodes(x->dir);
 }
 
+static void node_salvar(NODE *x, FILE *f) {
+	if (x == NULL) {
+		fprintf(f, "{NULL}\n");
+		return;
+	}
+	fprintf(f, "{[%s]:", x->chave);
+	lista_salvar_indice(x->lista, f);
+	fprintf(f, "}\n");
+	node_salvar(x->esq, f);
+	node_salvar(x->dir, f);
+}
+
+static NODE *node_carregar(FILE *f) {
+	int c = fgetc(f);
+	while (isspace(c)) c = fgetc(f);
+	if (c != '{') return NULL;
+
+	c = fgetc(f);
+	if (c == 'N') {
+		fscanf(f, "ULL}");
+		return NULL;
+	}
+	if (c != '[') return NULL;
+
+	char chave[1024];
+	if (fscanf(f, "%1023[^]]]:", chave) != 1) return NULL;
+
+	NODE *novo = (NODE *)malloc(sizeof(NODE));
+	if (novo == NULL) return NULL;
+
+	novo->chave = duplicar_str(chave);
+	novo->lista = lista_carregar_indice(f);
+	if (novo->chave == NULL || novo->lista == NULL) {
+		free(novo->chave);
+		lista_apagar(&novo->lista);
+		free(novo);
+		return NULL;
+	}
+
+	while ((c = fgetc(f)) != EOF && c != '}');
+
+	novo->esq = node_carregar(f);
+	novo->dir = node_carregar(f);
+	return novo;
+}
+
 // funcoes da interface principal
 
 ABB *abb_criar(const char *criterio) {
@@ -185,4 +231,45 @@ int abb_altura(ABB *x) {
 int abb_num_chaves(ABB *x) {
 	if (x == NULL) return -1;
 	return num_nodes(x->raiz);
+}
+
+bool abb_salvar_indice(ABB *x, FILE *f) {
+	if (x == NULL || f == NULL) return false;
+
+	const char *tipo_str = "INDEFINIDO";
+	if (x->raiz != NULL) {
+		tipo_str = eh_numero(x->raiz->chave, NULL) ? "NUMERICO" : "STRING";
+	}
+
+	fprintf(f, "Árvore: [ABB]\n");
+	fprintf(f, "Tipo da chave: [%s]\n", tipo_str);
+	fprintf(f, "Criterio: [%s]\n", x->criterio);
+	node_salvar(x->raiz, f);
+	fprintf(f, "FIM\n");
+
+	return ferror(f) == 0;
+}
+
+ABB *abb_recuperar_indice(FILE *f) {
+	if (f == NULL) return NULL;
+
+	char linha[1024];
+	char criterio[512] = "";
+
+	while (fgets(linha, sizeof(linha), f) != NULL) {
+		linha[strcspn(linha, "\r\n")] = '\0';
+		if (sscanf(linha, "Criterio: [%511[^]]]", criterio) == 1) {
+			break;
+		}
+	}
+
+	if (criterio[0] == '\0') return NULL;
+
+	ABB *nova = abb_criar(criterio);
+	if (nova == NULL) return NULL;
+
+	nova->raiz = node_carregar(f);
+	fgets(linha, sizeof(linha), f);
+
+	return nova;
 }

@@ -12,5 +12,7 @@ bool abb_inserir(ABB *x, const char *chave, long long offset);
 LISTA *abb_busca(ABB *x, const char *chave);
 int abb_altura(ABB *x);
 int abb_num_chaves(ABB *x);
+bool abb_salvar_indice(ABB *x, FILE *f);
+ABB *abb_recuperar_indice(FILE *f);
 
 #endif
