@@ -178,6 +178,54 @@ static NODE *node_inserir(NODE *raiz, const char *chave, long long offset, bool 
 	return raiz;
 }
 
+static void node_salvar(NODE *x, FILE *f) {
+	if (x == NULL) {
+		fprintf(f, "{NULL}\n");
+		return;
+	}
+	fprintf(f, "{[%s]:", x->chave);
+	lista_salvar_indice(x->lista, f);
+	fprintf(f, "}\n");
+	node_salvar(x->esq, f);
+	node_salvar(x->dir, f);
+}
+
+static NODE *node_carregar(FILE *f) {
+	int c = fgetc(f);
+	while (isspace(c)) c = fgetc(f);
+	if (c != '{') return NULL;
+
+	c = fgetc(f);
+	if (c == 'N') {
+		fscanf(f, "ULL}");
+		return NULL;
+	}
+	if (c != '[') return NULL;
+
+	char chave[1024];
+	if (fscanf(f, "%1023[^]]]:", chave) != 1) return NULL;
+
+	NODE *novo = (NODE *)malloc(sizeof(NODE));
+	if (novo == NULL) return NULL;
+
+	novo->chave = duplicar_str(chave);
+	novo->lista = lista_carregar_indice(f);
+	if (novo->chave == NULL || novo->lista == NULL) {
+		free(novo->chave);
+		lista_apagar(&novo->lista);
+		free(novo);
+		return NULL;
+	}
+
+	while ((c = fgetc(f)) != EOF && c != '}');
+
+	novo->esq = node_carregar(f);
+	novo->dir = node_carregar(f);
+	// a altura nao eh salva no arquivo, entao eh recalculada a partir dos filhos
+	novo->altura = 1 + max(get_alt(novo->esq), get_alt(novo->dir));
+	return novo;
+}
+
 // funcoes da interface principal
 
 AVL *avl_criar(const char *criterio){
@@ -228,4 +276,45 @@ int avl_altura(AVL *x){
 
 int avl_num_chaves(AVL *x){
 	return num_nodes(x->raiz);
+}
+
+bool avl_salvar_indice(AVL *x, FILE *f) {
+	if (x == NULL || f == NULL) return false;
+
+	const char *tipo_str = "INDEFINIDO";
+	if (x->raiz != NULL) {
+		tipo_str = eh_numero(x->raiz->chave, NULL) ? "NUMERICO" : "STRING";
+	}
+
+	fprintf(f, "Árvore: [AVL]\n");
+	fprintf(f, "Tipo da chave: [%s]\n", tipo_str);
+	fprintf(f, "Criterio: [%s]\n", x->criterio);
+	node_salvar(x->raiz, f);
+	fprintf(f, "FIM\n");
+
+	return ferror(f) == 0;
+}
+
+AVL *avl_recuperar_indice(FILE *f) {
+	if (f == NULL) return NULL;
+
+	char linha[1024];
+	char criterio[512] = "";
+
+	while (fgets(linha, sizeof(linha), f) != NULL) {
+		linha[strcspn(linha, "\r\n")] = '\0';
+		if (sscanf(linha, "Criterio: [%511[^]]]", criterio) == 1) {
+			break;
+		}
+	}
+
+	if (criterio[0] == '\0') return NULL;
+
+	AVL *nova = avl_criar(criterio);
+	if (nova == NULL) return NULL;
+
+	nova->raiz = node_carregar(f);
+	fgets(linha, sizeof(linha), f);
+
+	return nova;
 }

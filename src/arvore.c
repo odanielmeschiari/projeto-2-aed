@@ -54,3 +54,19 @@ int arvore_num_chaves(const char *tipo, void *x) {
 	else if (!strcmp(tipo, "rubro_negra")) return rn_num_chaves((RN *)x);
 	else return -1;
 }
+
+bool arvore_salvar_indice(const char *tipo, void *x, FILE *f) {
+	if (tipo == NULL || x == NULL || f == NULL) return false;
+	if (!strcmp(tipo, "abb")) return abb_salvar_indice((ABB *)x, f);
+	else if (!strcmp(tipo, "avl")) return avl_salvar_indice((AVL *)x, f);
+	else if (!strcmp(tipo, "rubro_negra")) return rn_salvar_indice((RN *)x, f);
+	else return false;
+}
+
+void *arvore_recuperar_indice(const char *tipo, FILE *f) {
+	if (tipo == NULL || f == NULL) return NULL;
+	if (!strcmp(tipo, "abb")) return (void *)abb_recuperar_indice(f);
+	else if (!strcmp(tipo, "avl")) return (void *)avl_recuperar_indice(f);
+	else if (!strcmp(tipo, "rubro_negra")) return (void *)rn_recuperar_indice(f);
+	else return NULL;
+}

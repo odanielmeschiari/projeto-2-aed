@@ -12,5 +12,7 @@ bool avl_inserir(AVL *x, const char *chave, long long offset);
 LISTA *avl_busca(AVL *x, const char *chave);
 int avl_altura(AVL *x);
 int avl_num_chaves(AVL *x);
+bool avl_salvar_indice(AVL *x, FILE *f);
+AVL *avl_recuperar_indice(FILE *f);
 
 #endif

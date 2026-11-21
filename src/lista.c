@@ -82,3 +82,44 @@ long long lista_tamanho(LISTA *x){
 	if (x == NULL) return -1;
 	return x->tamanho;
 }
+
+void lista_salvar_indice(LISTA *x, FILE *f){
+	if (x == NULL || f == NULL) return;
+	fprintf(f,"[");
+	NODE *atual = x->head;
+	while (atual != NULL){
+		fprintf(f,"%lld",atual->offset);
+		if (atual->next != NULL){
+			fprintf(f,"|");
+		}
+		atual = atual->next;
+	}
+	fprintf(f,"]");
+}
+
+LISTA *lista_carregar_indice(FILE *f){
+	LISTA *lista = lista_criar();
+	if (lista == NULL) return NULL;
+
+	int c = fgetc(f);
+	if (c != '[') {
+		lista_apagar(&lista);
+		return NULL;
+	}
+
+	c = fgetc(f);
+	if (c == ']') return lista;
+	ungetc(c, f);
+
+	long long offset;
+	while (fscanf(f, "%lld", &offset) == 1) {
+		lista_inserir(lista, offset);
+		c = fgetc(f);
+		if (c == ']') break;
+		if (c != '|') {
+			lista_apagar(&lista);
+			return NULL;
+		}
+	}
+	return lista;
+}
